@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>F.R.I.D.A.Y. — Digital Assistant Interface</title>
+  
+  <!-- Typography & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@400;700;800&display=swap" rel="stylesheet">
+  
+  <!-- LiveKit Client SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.0.4/dist/livekit-client.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --card-bg: rgba(13, 20, 38, 0.45);
+      --card-border: rgba(0, 242, 254, 0.15);
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      
+      /* Glowing Neon Colors */
+      --glow-cyan: #00f2fe;
+      --glow-blue: #4facfe;
+      --glow-gold: #ffb300;
+      --glow-red: #ff3366;
+      --glow-green: #00ff87;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(0, 242, 254, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(79, 172, 254, 0.05) 0%, transparent 40%);
+    }
+
+    /* Core UI Container */
+    .container {
+      width: 100%;
+      max-width: 600px;
+      padding: 24px;
+      text-align: center;
+      z-index: 10;
+    }
+
+    header {
+      margin-bottom: 40px;
+    }
+
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      background: linear-gradient(135deg, var(--glow-cyan) 0%, var(--glow-blue) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 30px rgba(0, 242, 254, 0.2);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .tagline {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      letter-spacing: 1px;
+    }
+
+    /* Main Interface Console Card */
+    .console-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 40px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 24px;
+      transition: border-color 0.5s ease, box-shadow 0.5s ease;
+    }
+
+    .console-card.active {
+      border-color: rgba(0, 242, 254, 0.4);
+      box-shadow: 0 20px 50px rgba(0, 242, 254, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    /* Status Display */
+    .status-panel {
+      margin-bottom: 30px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 100px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--text-secondary);
+      box-shadow: 0 0 8px var(--text-secondary);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    /* Dynamic Visualizer Ring/Orb */
+    .orb-container {
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 30px auto;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .orb-glow {
+      position: absolute;
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 242, 254, 0.2) 0%, transparent 70%);
+      filter: blur(10px);
+      animation: pulse 4s infinite alternate;
+      transition: background 0.5s ease;
+    }
+
+    .orb {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 2px solid rgba(0, 242, 254, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(0, 242, 254, 0.15);
+      transition: border-color 0.5s ease, box-shadow 0.5s ease;
+    }
+
+    .orb-inner {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(0, 242, 254, 0.2) 0%, rgba(79, 172, 254, 0.2) 100%);
+      border: 1px solid rgba(0, 242, 254, 0.5);
+      box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.3s ease;
+    }
+
+    /* Wave Visualizer Canvas overlay */
+    .visualizer-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* Audio Waves/Controls */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .btn {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: 1.5px;
+      padding: 16px 36px;
+      border-radius: 100px;
+      border: none;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-connect {
+      background: linear-gradient(135deg, var(--glow-cyan) 0%, var(--glow-blue) 100%);
+      color: #0b0f19;
+    }
+
+    .btn-connect:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 242, 254, 0.4);
+    }
+
+    .btn-disconnect {
+      background: rgba(255, 51, 102, 0.1);
+      border: 1px solid rgba(255, 51, 102, 0.4);
+      color: var(--glow-red);
+    }
+
+    .btn-disconnect:hover {
+      background: var(--glow-red);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(255, 51, 102, 0.3);
+    }
+
+    /* Connection Details Footer */
+    .connection-status {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 15px;
+    }
+
+    /* Animation States */
+    @keyframes pulse {
+      0% { transform: scale(0.9); opacity: 0.5; }
+      100% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    .state-connecting .orb {
+      border-color: rgba(255, 179, 0, 0.5);
+      box-shadow: 0 0 20px rgba(255, 179, 0, 0.3);
+      animation: spin 3s linear infinite;
+    }
+    .state-connecting .status-dot {
+      background-color: var(--glow-gold);
+      box-shadow: 0 0 10px var(--glow-gold);
+    }
+
+    .state-listening .orb {
+      border-color: rgba(0, 242, 254, 0.6);
+      box-shadow: 0 0 25px rgba(0, 242, 254, 0.25);
+    }
+    .state-listening .status-dot {
+      background-color: var(--glow-cyan);
+      box-shadow: 0 0 10px var(--glow-cyan);
+    }
+
+    .state-thinking .orb {
+      border-color: rgba(79, 172, 254, 0.8);
+      box-shadow: 0 0 30px rgba(79, 172, 254, 0.4);
+      animation: pulse 0.5s infinite alternate;
+    }
+    .state-thinking .status-dot {
+      background-color: var(--glow-blue);
+      box-shadow: 0 0 10px var(--glow-blue);
+    }
+
+    .state-speaking .orb {
+      border-color: rgba(0, 255, 135, 0.7);
+      box-shadow: 0 0 35px rgba(0, 255, 135, 0.35);
+    }
+    .state-speaking .status-dot {
+      background-color: var(--glow-green);
+      box-shadow: 0 0 10px var(--glow-green);
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Extra UI Elements */
+    .system-log {
+      margin-top: 30px;
+      font-family: monospace;
+      font-size: 0.75rem;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: left;
+      height: 80px;
+      overflow-y: auto;
+      color: var(--text-secondary);
+    }
+
+    .system-log p {
+      margin-bottom: 4px;
+    }
+    .system-log .time {
+      color: var(--glow-cyan);
+      margin-right: 6px;
+    }
+  </style>
+</head>
+<body class="state-offline">
+
+  <div class="container">
+    <header>
+      <h1>F.R.I.D.A.Y.</h1>
+      <div class="tagline">Tony Stark Assistant Interface v1.0</div>
+    </header>
+
+    <div class="console-card" id="consoleCard">
+      <!-- Voice Ripple Visualizer Canvas -->
+      <canvas class="visualizer-canvas" id="canvas"></canvas>
+
+      <div class="status-panel">
+        <div class="status-badge">
+          <span class="status-dot"></span>
+          <span id="statusText">Offline</span>
+        </div>
+      </div>
+
+      <div class="orb-container">
+        <div class="orb-glow" id="orbGlow"></div>
+        <div class="orb" id="mainOrb">
+          <div class="orb-inner" id="innerOrb">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="micIcon" style="color: var(--glow-cyan); filter: drop-shadow(0 0 8px rgba(0, 242, 254, 0.5));">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" x2="12" y1="19" y2="22"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn btn-connect" id="btnConnect">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+          Initialize Link
+        </button>
+      </div>
+
+      <div class="connection-status" id="connectionDetails">Ready for authorization</div>
+    </div>
+
+    <div class="system-log" id="logBox">
+      <p><span class="time">[SYS]</span>Systems standing by. Click 'Initialize Link' to connect.</p>
+    </div>
+  </div>
+
+  <script>
+    // Config elements
+    const btnConnect = document.getElementById('btnConnect');
+    const statusText = document.getElementById('statusText');
+    const connectionDetails = document.getElementById('connectionDetails');
+    const consoleCard = document.getElementById('consoleCard');
+    const logBox = document.getElementById('logBox');
+    const canvas = document.getElementById('canvas');
+    const innerOrb = document.getElementById('innerOrb');
+    const orbGlow = document.getElementById('orbGlow');
+    const micIcon = document.getElementById('micIcon');
+    const ctx = canvas.getContext('2d');
+
+    // LiveKit State variables
+    let room = null;
+    let audioContext = null;
+    let analyser = null;
+    let localAnalyser = null;
+    let animationFrame = null;
+    let activeVisualizerSource = null;
+    let isConnected = false;
+
+    // Set canvas dimensions
+    function resizeCanvas() {
+      canvas.width = consoleCard.clientWidth;
+      canvas.height = consoleCard.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Log printer
+    function log(message, system = true) {
+      const time = new Date().toLocaleTimeString();
+      const prefix = system ? 'SYS' : 'COM';
+      const color = system ? 'var(--glow-cyan)' : 'var(--glow-green)';
+      
+      const p = document.createElement('p');
+      p.innerHTML = `<span class="time" style="color: ${color}">[${prefix}]</span>${message}`;
+      logBox.appendChild(p);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    // Set UI State helper
+    function setUIState(state) {
+      document.body.className = '';
+      document.body.classList.add(`state-${state}`);
+      
+      if (state === 'offline') {
+        statusText.innerText = 'Offline';
+        btnConnect.className = 'btn btn-connect';
+        btnConnect.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10"/>
+          </svg> Initialize Link`;
+        micIcon.style.color = 'var(--glow-cyan)';
+        micIcon.style.filter = 'drop-shadow(0 0 8px rgba(0, 242, 254, 0.5))';
+        orbGlow.style.background = 'radial-gradient(circle, rgba(0, 242, 254, 0.2) 0%, transparent 70%)';
+      } else if (state === 'connecting') {
+        statusText.innerText = 'Connecting';
+        btnConnect.className = 'btn btn-disconnect';
+        btnConnect.innerHTML = `Cancel Link`;
+        micIcon.style.color = 'var(--glow-gold)';
+        micIcon.style.filter = 'drop-shadow(0 0 8px rgba(255, 179, 0, 0.5))';
+        orbGlow.style.background = 'radial-gradient(circle, rgba(255, 179, 0, 0.2) 0%, transparent 70%)';
+      } else if (state === 'listening') {
+        statusText.innerText = 'Online / Listening';
+        btnConnect.className = 'btn btn-disconnect';
+        btnConnect.innerHTML = `Disconnect`;
+        micIcon.style.color = 'var(--glow-cyan)';
+        micIcon.style.filter = 'drop-shadow(0 0 8px rgba(0, 242, 254, 0.5))';
+        orbGlow.style.background = 'radial-gradient(circle, rgba(0, 242, 254, 0.2) 0%, transparent 70%)';
+      } else if (state === 'thinking') {
+        statusText.innerText = 'Thinking...';
+        micIcon.style.color = 'var(--glow-blue)';
+        micIcon.style.filter = 'drop-shadow(0 0 8px rgba(79, 172, 254, 0.5))';
+        orbGlow.style.background = 'radial-gradient(circle, rgba(79, 172, 254, 0.2) 0%, transparent 70%)';
+      } else if (state === 'speaking') {
+        statusText.innerText = 'F.R.I.D.A.Y. Speaking';
+        micIcon.style.color = 'var(--glow-green)';
+        micIcon.style.filter = 'drop-shadow(0 0 8px rgba(0, 255, 135, 0.5))';
+        orbGlow.style.background = 'radial-gradient(circle, rgba(0, 255, 135, 0.2) 0%, transparent 70%)';
+      }
+    }
+
+    // Audio Visualizer Loop
+    function startVisualizer() {
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+
+      const bufferLength = analyser ? analyser.frequencyBinCount : 128;
+      const dataArray = new Uint8Array(bufferLength);
+      
+      const localBufferLength = localAnalyser ? localAnalyser.frequencyBinCount : 128;
+      const localDataArray = new Uint8Array(localBufferLength);
+
+      let phase = 0;
+
+      function draw() {
+        animationFrame = requestAnimationFrame(draw);
+        resizeCanvas();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        let volume = 0;
+        let isSpeakingState = document.body.classList.contains('state-speaking');
+        let isListeningState = document.body.classList.contains('state-listening');
+        let isThinkingState = document.body.classList.contains('state-thinking');
+
+        if (isSpeakingState && analyser) {
+          analyser.getByteFrequencyData(dataArray);
+          volume = dataArray.reduce((a, b) => a + b, 0) / bufferLength;
+        } else if (isListeningState && localAnalyser) {
+          localAnalyser.getByteFrequencyData(localDataArray);
+          volume = localDataArray.reduce((a, b) => a + b, 0) / localBufferLength;
+        }
+
+        // Apply scale effect to the orb based on audio level
+        const scaleVal = 1 + (volume / 255) * 0.4;
+        innerOrb.style.transform = `scale(${scaleVal})`;
+
+        // Draw multiple beautiful layered sine waves across the screen
+        const numWaves = 4;
+        phase += 0.05;
+
+        for (let w = 0; w < numWaves; w++) {
+          ctx.beginPath();
+          ctx.lineWidth = w === 0 ? 2 : 1;
+          
+          let strokeStyle = 'rgba(0, 242, 254, 0.15)';
+          if (isSpeakingState) {
+            strokeStyle = `rgba(0, 255, 135, ${0.4 - w * 0.08})`; // Green ripple
+          } else if (isListeningState && volume > 10) {
+            strokeStyle = `rgba(0, 242, 254, ${0.4 - w * 0.08})`; // Cyan ripple
+          } else if (isThinkingState) {
+            strokeStyle = `rgba(79, 172, 254, ${0.3 - w * 0.06})`; // Blue ripples
+          }
+
+          ctx.strokeStyle = strokeStyle;
+          
+          const amplitude = (volume * (1.5 + w * 0.5)) + (isThinkingState ? 10 : 2);
+          const frequency = 0.008 + w * 0.003;
+
+          for (let x = 0; x < canvas.width; x++) {
+            // Sine function offset by phases and layered amplitudes
+            const y = canvas.height / 2 + Math.sin(x * frequency + phase + w) * amplitude * Math.sin(x * Math.PI / canvas.width);
+            if (x === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+          }
+          ctx.stroke();
+        }
+      }
+
+      draw();
+    }
+
+    // Connect function
+    async function connectToFriday() {
+      if (isConnected) {
+        disconnectFromFriday();
+        return;
+      }
+
+      setUIState('connecting');
+      log("Initializing neural link...");
+
+      try {
+        // 1. Fetch server configurations
+        const configResponse = await fetch('/config');
+        if (!configResponse.ok) throw new Error("Could not fetch local server configs");
+        const configData = await configResponse.json();
+        const livekitUrl = configData.url;
+        
+        log(`Resolved server address: ${livekitUrl}`);
+
+        // 2. Fetch JWT authentication token
+        const tokenResponse = await fetch('/token?room=friday-room&identity=Tony');
+        if (!tokenResponse.ok) throw new Error("Authentication handshake failed");
+        const tokenData = await tokenResponse.json();
+        
+        if (tokenData.error) throw new Error(tokenData.error);
+        const token = tokenData.token;
+
+        log("Decrypted security token.");
+
+        // 3. Setup audio context and analysers
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        
+        localAnalyser = audioContext.createAnalyser();
+        localAnalyser.fftSize = 256;
+
+        // 4. Instantiate LiveKit room
+        room = new LivekitClient.Room({
+          adaptiveStream: true,
+          dynacast: true,
+        });
+
+        // 5. Setup room listeners
+        room.on(LivekitClient.RoomEvent.Connected, () => {
+          isConnected = true;
+          log("Neural link established. FRIDAY is online.", false);
+          setUIState('listening');
+          connectionDetails.innerText = `Connected to ${livekitUrl}`;
+          consoleCard.classList.add('active');
+        });
+
+        room.on(LivekitClient.RoomEvent.Disconnected, (reason) => {
+          log(`Neural link terminated: ${reason || 'User trigger'}`);
+          cleanUpConnection();
+        });
+
+        room.on(LivekitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
+          if (track.kind === 'audio') {
+            log("Audio channel open. Receiving telemetry.");
+            
+            // Attach audio element to page
+            const el = track.attach();
+            document.body.appendChild(el);
+            
+            // Hook up remote audio to Web Audio API analyzer
+            try {
+              if (audioContext.state === 'suspended') {
+                audioContext.resume();
+              }
+              const source = audioContext.createMediaStreamSource(track.mediaStream);
+              source.connect(analyser);
+            } catch (err) {
+              console.error("Failed to connect Remote Audio to analyser:", err);
+            }
+          }
+        });
+
+        room.on(LivekitClient.RoomEvent.ParticipantAttributesChanged, (changedAttributes, participant) => {
+          const agentState = participant.attributes['lk.agent.state'];
+          if (agentState) {
+            log(`F.R.I.D.A.Y. State: ${agentState.toUpperCase()}`);
+            if (agentState === 'thinking') {
+              setUIState('thinking');
+            } else if (agentState === 'speaking') {
+              setUIState('speaking');
+            } else if (agentState === 'listening') {
+              setUIState('listening');
+            }
+          }
+        });
+
+        room.on(LivekitClient.RoomEvent.ActiveSpeakersChanged, (speakers) => {
+          // Detect who is speaking to change state UI (as secondary fallback)
+          if (speakers.length > 0) {
+            const speaker = speakers[0];
+            if (!speaker.isLocal) {
+              // Only override state to speaking if we aren't already syncing attributes
+              if (document.body.className !== 'state-speaking' && document.body.className !== 'state-thinking') {
+                setUIState('speaking');
+              }
+            } else {
+              if (document.body.className === 'state-speaking') {
+                setUIState('listening');
+              }
+            }
+          } else {
+            if (document.body.className === 'state-speaking') {
+              setUIState('listening');
+            }
+          }
+        });
+
+        // 6. Connect to room
+        await room.connect(livekitUrl, token);
+
+        // 7. Publish local audio (microphone) track
+        log("Activating vocal receivers...");
+        await room.localParticipant.enableCameraAndMicrophone({ video: false, audio: true });
+        log("Vocal receivers active.");
+
+        // Hook local mic to local analyser
+        const localMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const localSource = audioContext.createMediaStreamSource(localMicStream);
+        localSource.connect(localAnalyser);
+
+        // Start animation loop
+        startVisualizer();
+
+      } catch (err) {
+        log(`Neural link failure: ${err.message}`, true);
+        console.error(err);
+        cleanUpConnection();
+      }
+    }
+
+    function disconnectFromFriday() {
+      log("Terminating link...");
+      if (room) {
+        room.disconnect();
+      } else {
+        cleanUpConnection();
+      }
+    }
+
+    function cleanUpConnection() {
+      isConnected = false;
+      if (room) {
+        room = null;
+      }
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+        animationFrame = null;
+      }
+      if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+      }
+      analyser = null;
+      localAnalyser = null;
+      setUIState('offline');
+      connectionDetails.innerText = 'Ready for authorization';
+      consoleCard.classList.remove('active');
+    }
+
+    btnConnect.addEventListener('click', () => {
+      // Chrome requires user interaction to initialize AudioContext
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      connectToFriday();
+    });
+  </script>
+</body>
+</html>

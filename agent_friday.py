@@ -22,15 +22,15 @@ from livekit.agents.voice import Agent, AgentSession
 from livekit.agents.llm import mcp
 
 # Plugins
-from livekit.plugins import google as lk_google, openai as lk_openai, sarvam, silero
+from livekit.plugins import google as lk_google, openai as lk_openai, sarvam, silero, deepgram as lk_deepgram
 
 # ---------------------------------------------------------------------------
 # CONFIG
 # ---------------------------------------------------------------------------
 
-STT_PROVIDER       = "sarvam"
+STT_PROVIDER       = "deepgram"
 LLM_PROVIDER       = "gemini"
-TTS_PROVIDER       = "openai"
+TTS_PROVIDER       = "deepgram"
 
 GEMINI_LLM_MODEL   = "gemini-2.5-flash"
 OPENAI_LLM_MODEL   = "gpt-4o"
@@ -213,6 +213,9 @@ def _build_stt():
     elif STT_PROVIDER == "whisper":
         logger.info("STT → OpenAI Whisper")
         return lk_openai.STT(model="whisper-1")
+    elif STT_PROVIDER == "deepgram":
+        logger.info("STT → Deepgram")
+        return lk_deepgram.STT()
     else:
         raise ValueError(f"Unknown STT_PROVIDER: {STT_PROVIDER!r}")
 
@@ -240,6 +243,9 @@ def _build_tts():
     elif TTS_PROVIDER == "openai":
         logger.info("TTS → OpenAI TTS (%s / %s)", OPENAI_TTS_MODEL, OPENAI_TTS_VOICE)
         return lk_openai.TTS(model=OPENAI_TTS_MODEL, voice=OPENAI_TTS_VOICE, speed=TTS_SPEED)
+    elif TTS_PROVIDER == "deepgram":
+        logger.info("TTS → Deepgram Aura")
+        return lk_deepgram.TTS()
     else:
         raise ValueError(f"Unknown TTS_PROVIDER: {TTS_PROVIDER!r}")
 
@@ -260,7 +266,11 @@ class FridayAgent(Agent):
             stt=stt,
             llm=llm,
             tts=tts,
-            vad=silero.VAD.load(),
+            vad=silero.VAD.load(
+                min_speech_duration=0.3,       # Filter out quick noises/breaths/keyboard clicks
+                min_silence_duration=0.8,      # Wait longer before deciding user stopped speaking
+                activation_threshold=0.7,      # Be less sensitive to breathing / background hum
+            ),
             mcp_servers=[
                 mcp.MCPServerHTTP(
                     url=_mcp_server_url(),
@@ -325,6 +335,17 @@ async def entrypoint(ctx: JobContext) -> None:
         turn_detection=_turn_detection(),
         min_endpointing_delay=_endpointing_delay(),
     )
+
+    @session.on("error")
+    async def on_error(event):
+        logger.error(f"Agent session error: {event.error}")
+        err_str = str(event.error).lower()
+        if "429" in err_str or "rate limit" in err_str or "quota" in err_str:
+            logger.warning("Detected 429 / Rate Limit error. Speaking message to user.")
+            await session.say("My connection to the mainframe is throttling, boss. Give me a brief moment.")
+        elif "api_key" in err_str or "api key" in err_str or "auth" in err_str:
+            logger.warning("Authentication error detected.")
+            await session.say("Authentication error. Please check the API key, boss.")
 
     await session.start(
         agent=FridayAgent(stt=stt, llm=llm, tts=tts),
