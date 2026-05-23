@@ -1,17 +1,24 @@
-# F.R.I.D.A.Y. — Tony Stark Demo
+# Tony Stark Inspired AI Assistant
 
-> *"Fully Responsive Intelligent Digital Assistant for You"*
+An AI-powered desktop assistant inspired by Tony Stark's FRIDAY/JARVIS.
 
-A Tony Stark-inspired AI assistant split into two cooperating pieces:
+## Features
+- Voice assistant
+- Automation commands
+- AI interaction
+- System control
+- Future AI integrations
 
-| Component | What it is |
-|-----------|-----------|
-| **MCP Server** (`uv run friday`) | A [FastMCP](https://github.com/jlowin/fastmcp) server that exposes tools (news, web search, system info, …) over SSE. Think of it as the Stark Industries backend — it does the actual work. |
-| **Voice Agent** (`uv run friday_voice`) | A [LiveKit Agents](https://github.com/livekit/agents) voice pipeline that listens to your microphone, reasons with an LLM (Gemini 2.5 Flash by default), and speaks back with OpenAI TTS — all while pulling tools from the MCP server in real time. |
+## Technologies Used
+- Python
+- SpeechRecognition
+- AI APIs
+- Automation libraries
 
-Demo: [Instagram reel](https://www.instagram.com/p/DW2HjYtkwg_/)
-
-[![Demo Video Guide](https://img.youtube.com/vi/mMY9swqe3BI/maxresdefault.jpg)](https://www.youtube.com/watch?v=mMY9swqe3BI)
+## Future Plans
+- Smart PC control
+- Real-time AI responses
+- Vision capabilities
 
 ---
 
